@@ -67,10 +67,14 @@ const Dashboard = () => {
         members: selectedUsers,
         messages: [], // Initialize with an empty messages array
       });
+
+      // Update local state with the new team
+      const newTeam = { id: teamRef.id, name: teamName, type: teamType, members: selectedUsers, messages: [] };
+      setTeams(prevTeams => [...prevTeams, newTeam]); // Add the new team to the teams state
+
       alert("Team created successfully!");
       setTeamName("");
       setSelectedUsers([]);
-      await fetchTeams(); // Refresh the teams after creating a new one
     } catch (error) {
       console.error("Error creating team: ", error); // Log the error to the console
       alert("Failed to create team: " + error.message); // Show a more detailed error message
@@ -198,24 +202,20 @@ const Dashboard = () => {
         {selectedTeam && (
           <div>
             <h4 className="font-semibold text-purple-800 mb-2">Messages in {selectedTeam.name}</h4>
-            <div className="max-h-60 overflow-y-scroll border border-gray-300 p-2 mb-2 rounded">
-              {messages.map((message, index) => (
-                <div key={index} className="mb-1">
-                  <strong>{message.user}: </strong>
-                  {message.text}
-                </div>
+            <div className="max-h-60 overflow-y-scroll border border-gray-300 p-2 mb-2">
+              {messages.map((msg, index) => (
+                <p key={index} className="mb-1"><strong>{msg.user}:</strong> {msg.text}</p>
               ))}
             </div>
-            <input
-              type="text"
-              placeholder="Type your message..."
+            <textarea
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring focus:ring-purple-300"
+              placeholder="Type your message..."
+              className="border border-gray-300 p-2 mb-2 rounded w-full focus:outline-none focus:ring focus:ring-purple-300"
             />
             <button
               onClick={handleSendMessage}
-              className="bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-200 w-full"
+              className="bg-blue-500 text-white p-3 rounded hover:bg-blue-600 transition duration-200 w-full"
             >
               Send Message
             </button>
