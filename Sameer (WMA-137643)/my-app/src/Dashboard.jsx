@@ -3,6 +3,7 @@ import { db } from "./firebaseConfig"; // Import Firestore
 import { collection, getDocs, addDoc, doc, getDoc, updateDoc } from "firebase/firestore"; // Firestore methods
 import { auth } from "./firebaseConfig"; // Ensure auth is imported
 import { useAuthState } from "react-firebase-hooks/auth"; // Ensure this import is correct
+import Swal from "sweetalert2"; // Import SweetAlert2
 
 const Dashboard = () => {
   const [users, setUsers] = useState([]);
@@ -27,10 +28,10 @@ const Dashboard = () => {
 
     const fetchCurrentUserName = async () => {
       if (!user) return; // Ensure user is logged in
-
+    
       const userDocRef = doc(db, "users", user.uid); // Reference the current user's document
       const userDoc = await getDoc(userDocRef); // Fetch the user document
-
+    
       if (userDoc.exists()) {
         const userData = userDoc.data();
         console.log("Fetched User Data:", userData); // Debugging: Log the user data
@@ -39,6 +40,7 @@ const Dashboard = () => {
         console.error("No such user document!");
       }
     };
+    
 
     const fetchTeams = async () => {
       const teamsCollection = collection(db, "teams");
@@ -56,7 +58,7 @@ const Dashboard = () => {
 
   const handleCreateTeam = async () => {
     if (teamName.trim() === "" || selectedUsers.length === 0) {
-      alert("Please enter a team name and select users.");
+      Swal.fire("Error", "Please enter a team name and select users.", "error");
       return;
     }
 
@@ -72,12 +74,12 @@ const Dashboard = () => {
       const newTeam = { id: teamRef.id, name: teamName, type: teamType, members: selectedUsers, messages: [] };
       setTeams(prevTeams => [...prevTeams, newTeam]); // Add the new team to the teams state
 
-      alert("Team created successfully!");
+      Swal.fire("Success", "Team created successfully!", "success"); // Success alert
       setTeamName("");
       setSelectedUsers([]);
     } catch (error) {
       console.error("Error creating team: ", error); // Log the error to the console
-      alert("Failed to create team: " + error.message); // Show a more detailed error message
+      Swal.fire("Error", "Failed to create team: " + error.message, "error"); // Error alert
     }
   };
 
@@ -89,7 +91,7 @@ const Dashboard = () => {
 
   const handleSendMessage = async () => {
     if (newMessage.trim() === "") {
-      alert("Please enter a message.");
+      Swal.fire("Error", "Please enter a message.", "error"); // Error alert for empty message
       return;
     }
 
@@ -105,9 +107,10 @@ const Dashboard = () => {
       });
       setMessages(updatedMessages); // Update local messages state
       setNewMessage(""); // Clear the input field
+      Swal.fire("Success", "Message sent successfully!", "success"); // Success alert for sent message
     } catch (error) {
       console.error("Error sending message: ", error);
-      alert("Failed to send message.");
+      Swal.fire("Error", "Failed to send message.", "error"); // Error alert for failed message
     }
   };
 
@@ -116,7 +119,7 @@ const Dashboard = () => {
       <div className="flex-1 bg-white rounded-lg shadow-lg p-6 mr-4">
         <header className="mb-6">
           <h2 className="text-4xl font-bold mb-2 animate-bounce text-purple-600">Dashboard</h2>
-          <p className="text-2xl font-bold">Welcome, {currentUserName}!</p>
+          <p className="text-2xl font-bold">Welcome, {user.name || user.email}!</p>
         </header>
 
         <h3 className="text-2xl font-semibold mb-2 text-purple-800">All Users</h3>
@@ -189,37 +192,42 @@ const Dashboard = () => {
         <h3 className="text-2xl font-semibold mb-2 text-purple-800">My Teams</h3>
         <ul className="list-disc mb-4">
           {teams.map(team => (
-            <li
-              key={team.id}
-              className="cursor-pointer mb-2 hover:bg-purple-100 transition duration-200 p-2 rounded font-bold"
-              onClick={() => handleTeamSelect(team)}
-            >
-              {team.name}
+            <li key={team.id} className="hover:bg-purple-100 transition duration-200 p-2 rounded">
+              <button
+                onClick={() => handleTeamSelect(team)}
+                className="font-bold text-left w-full"
+              >
+                {team.name}
+              </button>
             </li>
           ))}
         </ul>
 
         {selectedTeam && (
-          <div>
-            <h4 className="font-semibold text-purple-800 mb-2">Messages in {selectedTeam.name}</h4>
-            <div className="max-h-60 overflow-y-scroll border border-gray-300 p-2 mb-2">
+          <>
+            <h4 className="text-xl font-semibold mb-2">Chat with {selectedTeam.name}</h4>
+            <div className="border rounded-lg p-4 mb-4 h-60 overflow-y-scroll">
               {messages.map((msg, index) => (
-                <p key={index} className="mb-1"><strong>{msg.user}:</strong> {msg.text}</p>
+                <div key={index} className={`mb-2 ${msg.user === currentUserName ? "text-blue-600" : "text-gray-800"}`}>
+                  <strong>{msg.user}: </strong>
+                  {msg.text}
+                </div>
               ))}
             </div>
-            <textarea
+            <input
+              type="text"
+              placeholder="Type your message"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type your message..."
-              className="border border-gray-300 p-2 mb-2 rounded w-full focus:outline-none focus:ring focus:ring-purple-300"
+              className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring focus:ring-purple-300"
             />
             <button
               onClick={handleSendMessage}
-              className="bg-blue-500 text-white p-3 rounded hover:bg-blue-600 transition duration-200 w-full"
+              className="bg-green-500 text-white p-3 rounded hover:bg-green-600 transition duration-200 w-full mt-2"
             >
               Send Message
             </button>
-          </div>
+          </>
         )}
       </div>
     </div>
